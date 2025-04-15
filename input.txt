@@ -1,0 +1,4 @@
+P,LinuxPC,False,Linux Mint
+P,ThinkPad T440,False
+ED,Pi3,192.168.1.44,MD Ltd.Wifi-1
+ED,Pi4,192.168.1.45,

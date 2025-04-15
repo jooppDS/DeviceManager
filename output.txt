@@ -1,0 +1,6 @@
+SW,Apple Watch SE2,True,27%
+P,new,True,sigma
+P,ThinkPad T440,False
+ED,Pi3,192.168.1.44,MD Ltd.Wifi-1
+ED,Pi4,192.168.1.45,
+ED,Pi4,,

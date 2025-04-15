@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManagerAPI", "DeviceManagerAPI\DeviceManagerAPI.csproj", "{B765E1AC-9F78-47D0-B393-6AA661944C16}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManagerLib", "DeviceManagerLib\DeviceManagerLib.csproj", "{A9C4664C-1D50-4E73-A3A3-43508BB86F1B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B765E1AC-9F78-47D0-B393-6AA661944C16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B765E1AC-9F78-47D0-B393-6AA661944C16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B765E1AC-9F78-47D0-B393-6AA661944C16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B765E1AC-9F78-47D0-B393-6AA661944C16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9C4664C-1D50-4E73-A3A3-43508BB86F1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9C4664C-1D50-4E73-A3A3-43508BB86F1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9C4664C-1D50-4E73-A3A3-43508BB86F1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9C4664C-1D50-4E73-A3A3-43508BB86F1B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
