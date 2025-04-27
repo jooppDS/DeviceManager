@@ -2,141 +2,152 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using NuGet.Protocol;
-using task2;
+using DeviceManager.Data;
+using DeviceManagerLib;
+using System.Text.Json;
 
 namespace DeviceManagerAPI.Controllers
 {
     
     
-    [Route("api/[controller]")]
+    [Route("api/devices")]
     [ApiController]
     public class DeviceController : ControllerBase
     {
-        private readonly DeviceManager _deviceManager;
-        private readonly string _storageFilePath;
+        private readonly DeviceRepository _repository;
 
-
-        public DeviceController()
+        public DeviceController(DeviceRepository repository)
         {
-            _storageFilePath = Path.Combine(AppContext.BaseDirectory, "input.txt");
-            _deviceManager = new DeviceManager(_storageFilePath);
-        } 
-        
-        [HttpGet]
-        [Route("devices")]
-        public IActionResult GetDeviceList() // Needed IActionResult to get formated json output
-        {
-            return Ok(_deviceManager.ToString());
+            _repository = repository;
         }
 
+        // GET: api/devices
         [HttpGet]
-        [Route("devices/{id}")]
-        public IResult GetDevice(string id)
+        public IActionResult GetAllDevices()
         {
-            var device = _deviceManager.FindDevice(id);
+            var devices = _repository.GetAllDevices();
+            return Ok(devices);
+        }
+
+        // GET: api/devices/{id}
+        [HttpGet("{id}")]
+        public IActionResult GetDeviceById(string id)
+        {
+            var device = _repository.GetDeviceById(id);
             if (device == null)
+                return NotFound();
+            return Ok(device);
+        }
+
+        // POST: api/devices
+        [HttpPost]
+        public IActionResult CreateDevice([FromBody] JsonElement deviceDto)
+        {
+            if (!deviceDto.TryGetProperty("deviceType", out var deviceTypeProp))
+                return BadRequest("Missing deviceType field.");
+            var deviceType = deviceTypeProp.GetString()?.ToLower();
+            try
             {
-                return Results.NotFound();
+                switch (deviceType)
+                {
+                    case "personalcomputer":
+                    case "pc":
+                        var pc = JsonSerializer.Deserialize<PersonalComputer>(deviceDto.GetRawText());
+                        if (pc == null || string.IsNullOrWhiteSpace(pc.Id) || string.IsNullOrWhiteSpace(pc.OS))
+                            return BadRequest("Invalid PC data.");
+                        var pcDevice = new Device { Id = pc.Id, Name = pc.OS, IsEnabled = true };
+                        _repository.CreateDevice(pcDevice, pc);
+                        return Created($"/api/devices/{pc.Id}", pc);
+                    case "embedded":
+                    case "embeddeddevice":
+                        var emb = JsonSerializer.Deserialize<EmbeddedDevice>(deviceDto.GetRawText());
+                        if (emb == null || string.IsNullOrWhiteSpace(emb.Id) || string.IsNullOrWhiteSpace(emb.Ip) || string.IsNullOrWhiteSpace(emb.NetworkName))
+                            return BadRequest("Invalid EmbeddedDevice data.");
+                        if (!System.Net.IPAddress.TryParse(emb.Ip, out _))
+                            return BadRequest("Invalid IP address format.");
+                        var embDevice = new Device { Id = emb.Id, Name = emb.NetworkName, IsEnabled = true };
+                        _repository.CreateDevice(embDevice, emb);
+                        return Created($"/api/devices/{emb.Id}", emb);
+                    case "smartwatch":
+                        var sw = JsonSerializer.Deserialize<Smartwatch>(deviceDto.GetRawText());
+                        if (sw == null || string.IsNullOrWhiteSpace(sw.Id))
+                            return BadRequest("Invalid Smartwatch data.");
+                        if (sw.Power < 0)
+                            return BadRequest("Power must be non-negative.");
+                        var swDevice = new Device { Id = sw.Id, Name = "Smartwatch", IsEnabled = true };
+                        _repository.CreateDevice(swDevice, sw);
+                        return Created($"/api/devices/{sw.Id}", sw);
+                    default:
+                        return BadRequest("Unknown deviceType.");
+                }
             }
-            return Results.Ok(device);
-        }
-    
-        [HttpPost]
-        [Route("computer")]
-        public IResult CreatePC([FromBody] PersonalComputer computer)
-        {
-            if (computer == null)
-                return Results.BadRequest("Invalid device type.");
-            _deviceManager.AddDevice(computer);
-            SaveDeviceList();
-            return Results.Ok(computer);
-        }
-        
-        [HttpPost]
-        [Route("watch")]
-        public IResult CreateWatch([FromBody] Smartwatch watch)
-        {
-            if (watch == null)
-                return Results.BadRequest("Invalid device type.");
-            _deviceManager.AddDevice(watch);
-            SaveDeviceList();
-            return Results.Ok(watch);
-        }
-        
-        [HttpPost]
-        [Route("embeddedDevice")]
-        public IResult CreatePC([FromBody] EmbededDevice embededDevice)
-        {
-            if (embededDevice == null)
-                return Results.BadRequest("Invalid device type.");
-            _deviceManager.AddDevice(embededDevice);
-            SaveDeviceList();
-            return Results.Ok(embededDevice);
-        }
-    
-        
-        [HttpPut]
-        [Route("computer/{id}")]
-        public IResult UpdateDevice(String id, [FromBody] PersonalComputer computer)
-        {
-            if (computer == null)
-                return Results.BadRequest("Invalid device");
-            var oldDevice = _deviceManager.FindDevice(id);
-            if (oldDevice == null)
-                return Results.NotFound();
-            oldDevice.Edit(computer);
-            SaveDeviceList();
-            return Results.Ok(oldDevice);
-        }
-        
-        [HttpPut]
-        [Route("watch/{id}")]
-        public IResult UpdateDevice(String id, [FromBody] Smartwatch watch)
-        {
-            if (watch == null)
-                return Results.BadRequest("Invalid device");
-            var oldDevice = _deviceManager.FindDevice(id);
-            if (oldDevice == null)
-                return Results.NotFound();
-            oldDevice.Edit(watch);
-            SaveDeviceList();
-            return Results.Ok(oldDevice);
-        }
-        
-        [HttpPut]
-        [Route("embeddedDevice/{id}")]
-        public IResult UpdateDevice(String id, [FromBody] EmbededDevice embededDevice)
-        {
-            if (embededDevice == null)
-                return Results.BadRequest("Invalid device");
-            var oldDevice = _deviceManager.FindDevice(id);
-            if (oldDevice == null)
-                return Results.NotFound();
-            oldDevice.Edit(embededDevice);
-            SaveDeviceList();
-            return Results.Ok(oldDevice);
-        }
-        
-        
-    
-        [HttpDelete]
-        [Route("device/{id}")]
-        public IResult DeleteDevice(string id)
-        {
-            if (_deviceManager.RemoveDevice(id))
+            catch (Exception ex)
             {
-                SaveDeviceList();
-                return Results.Ok(200);
+                return BadRequest($"Error: {ex.Message}");
             }
-            return Results.NotFound("Device not found");
         }
-    
-        
-    
-    
-        private void SaveDeviceList()
+
+        // PUT: api/devices/{id}
+        [HttpPut("{id}")]
+        public IActionResult UpdateDevice(string id, [FromBody] JsonElement deviceDto)
         {
-            _deviceManager.SaveStorage(_storageFilePath);
+            if (!deviceDto.TryGetProperty("deviceType", out var deviceTypeProp))
+                return BadRequest("Missing deviceType field.");
+            var deviceType = deviceTypeProp.GetString()?.ToLower();
+            try
+            {
+                switch (deviceType)
+                {
+                    case "personalcomputer":
+                    case "pc":
+                        var pc = JsonSerializer.Deserialize<PersonalComputer>(deviceDto.GetRawText());
+                        if (pc == null || string.IsNullOrWhiteSpace(pc.Id) || string.IsNullOrWhiteSpace(pc.OS))
+                            return BadRequest("Invalid PC data.");
+                        var pcDevice = new Device { Id = id, Name = pc.OS, IsEnabled = true };
+                        _repository.UpdateDevice(pcDevice, pc);
+                        return Ok(pc);
+                    case "embedded":
+                    case "embeddeddevice":
+                        var emb = JsonSerializer.Deserialize<EmbeddedDevice>(deviceDto.GetRawText());
+                        if (emb == null || string.IsNullOrWhiteSpace(emb.Id) || string.IsNullOrWhiteSpace(emb.Ip) || string.IsNullOrWhiteSpace(emb.NetworkName))
+                            return BadRequest("Invalid EmbeddedDevice data.");
+                        if (!System.Net.IPAddress.TryParse(emb.Ip, out _))
+                            return BadRequest("Invalid IP address format.");
+                        var embDevice = new Device { Id = id, Name = emb.NetworkName, IsEnabled = true };
+                        _repository.UpdateDevice(embDevice, emb);
+                        return Ok(emb);
+                    case "smartwatch":
+                        var sw = JsonSerializer.Deserialize<Smartwatch>(deviceDto.GetRawText());
+                        if (sw == null || string.IsNullOrWhiteSpace(sw.Id))
+                            return BadRequest("Invalid Smartwatch data.");
+                        if (sw.Power < 0)
+                            return BadRequest("Power must be non-negative.");
+                        var swDevice = new Device { Id = id, Name = "Smartwatch", IsEnabled = true };
+                        _repository.UpdateDevice(swDevice, sw);
+                        return Ok(sw);
+                    default:
+                        return BadRequest("Unknown deviceType.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error: {ex.Message}");
+            }
         }
+
+        // DELETE: api/devices/{id}
+        [HttpDelete("{id}")]
+        public IActionResult DeleteDevice(string id)
+        {
+            try
+            {
+                _repository.DeleteDevice(id);
+                return NoContent();
+            }
+            catch
+            {
+                return NotFound();
+            }
         }
+    }
 }   
