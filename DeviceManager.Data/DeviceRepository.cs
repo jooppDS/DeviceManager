@@ -105,7 +105,7 @@ namespace DeviceManager.Data
                         }
                     }
 
-                    // If no child type, return base device
+                    
                     return device;
                 }
             }
@@ -122,32 +122,39 @@ namespace DeviceManager.Data
                 var transaction = connection.BeginTransaction();
                 try
                 {
-                    var cmd = new SqlCommand("INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)", connection, transaction);
-                    cmd.Parameters.AddWithValue("@Id", device.Id);
-                    cmd.Parameters.AddWithValue("@Name", device.Name);
-                    cmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
-                    cmd.ExecuteNonQuery();
-
+                  
                     if (details is PersonalComputer pc)
                     {
-                        var pcCmd = new SqlCommand("INSERT INTO PersonalComputer (Id, OS) VALUES (@Id, @OS)", connection, transaction);
-                        pcCmd.Parameters.AddWithValue("@Id", pc.Id);
-                        pcCmd.Parameters.AddWithValue("@OS", pc.OS);
+                        using var pcCmd = new SqlCommand("AddPersonalComputer", connection, transaction) {
+                            CommandType = CommandType.StoredProcedure
+                        };
+                        pcCmd.Parameters.AddWithValue("@DeviceId", device.Id);
+                        pcCmd.Parameters.AddWithValue("@Name", device.Name);
+                        pcCmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
+                        pcCmd.Parameters.AddWithValue("@OperationSystem", pc.OS);
                         pcCmd.ExecuteNonQuery();
                     }
                     else if (details is EmbeddedDevice emb)
                     {
-                        var embCmd = new SqlCommand("INSERT INTO EmbeddedDevice (Id, Ip, NetworkName) VALUES (@Id, @Ip, @NetworkName)", connection, transaction);
-                        embCmd.Parameters.AddWithValue("@Id", emb.Id);
-                        embCmd.Parameters.AddWithValue("@Ip", emb.Ip);
+                        using var embCmd = new SqlCommand("AddEmbedded", connection, transaction) {
+                            CommandType = CommandType.StoredProcedure
+                        };
+                        embCmd.Parameters.AddWithValue("@DeviceId", device.Id);
+                        embCmd.Parameters.AddWithValue("@Name", device.Name);
+                        embCmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
+                        embCmd.Parameters.AddWithValue("@IpAddress", emb.Ip);
                         embCmd.Parameters.AddWithValue("@NetworkName", emb.NetworkName);
                         embCmd.ExecuteNonQuery();
                     }
                     else if (details is Smartwatch sw)
                     {
-                        var swCmd = new SqlCommand("INSERT INTO Smartwatch (Id, Power) VALUES (@Id, @Power)", connection, transaction);
-                        swCmd.Parameters.AddWithValue("@Id", sw.Id);
-                        swCmd.Parameters.AddWithValue("@Power", sw.Power);
+                        using var swCmd = new SqlCommand("AddSmartwatch", connection, transaction) {
+                            CommandType = CommandType.StoredProcedure
+                        };
+                        swCmd.Parameters.AddWithValue("@DeviceId", device.Id);
+                        swCmd.Parameters.AddWithValue("@Name", device.Name);
+                        swCmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
+                        swCmd.Parameters.AddWithValue("@BatteryPercentage", sw.Power);
                         swCmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
