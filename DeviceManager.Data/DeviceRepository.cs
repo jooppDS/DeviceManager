@@ -23,7 +23,7 @@ namespace DeviceManager.Data
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                var command = new SqlCommand("SELECT Id, Name, IsEnabled FROM Device", connection);
+                var command = new SqlCommand("SELECT Id, Name, IsEnabled, Version FROM Device", connection);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -32,7 +32,8 @@ namespace DeviceManager.Data
                         {
                             Id = reader.GetString(0),
                             Name = reader.GetString(1),
-                            IsEnabled = reader.GetBoolean(2)
+                            IsEnabled = reader.GetBoolean(2),
+                            Version = (byte[])reader.GetValue(3)
                         });
                     }
                 }
@@ -45,7 +46,7 @@ namespace DeviceManager.Data
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                var command = new SqlCommand("SELECT Id, Name, IsEnabled FROM Device WHERE Id = @Id", connection);
+                var command = new SqlCommand("SELECT Id, Name, IsEnabled, Version FROM Device WHERE Id = @Id", connection);
                 command.Parameters.AddWithValue("@Id", id);
                 using (var reader = command.ExecuteReader())
                 {
@@ -55,7 +56,8 @@ namespace DeviceManager.Data
                     {
                         Id = reader.GetString(0),
                         Name = reader.GetString(1),
-                        IsEnabled = reader.GetBoolean(2)
+                        IsEnabled = reader.GetBoolean(2),
+                        Version = (byte[])reader.GetValue(3)
                     };
                     reader.Close();
 
@@ -69,7 +71,8 @@ namespace DeviceManager.Data
                             return new PersonalComputer
                             {
                                 Id = pcReader.GetString(0),
-                                OS = pcReader.GetString(1)
+                                OS = pcReader.GetString(1),
+                                Version = device.Version
                             };
                         }
                     }
@@ -85,7 +88,8 @@ namespace DeviceManager.Data
                             {
                                 Id = embReader.GetString(0),
                                 Ip = embReader.GetString(1),
-                                NetworkName = embReader.GetString(2)
+                                NetworkName = embReader.GetString(2),
+                                Version = device.Version
                             };
                         }
                     }
@@ -100,12 +104,12 @@ namespace DeviceManager.Data
                             return new Smartwatch
                             {
                                 Id = swReader.GetString(0),
-                                Power = swReader.GetInt64(1)
+                                Power = swReader.GetInt64(1),
+                                Version = device.Version
                             };
                         }
                     }
 
-                    
                     return device;
                 }
             }
@@ -122,7 +126,6 @@ namespace DeviceManager.Data
                 var transaction = connection.BeginTransaction();
                 try
                 {
-                  
                     if (details is PersonalComputer pc)
                     {
                         using var pcCmd = new SqlCommand("AddPersonalComputer", connection, transaction) {
@@ -172,46 +175,55 @@ namespace DeviceManager.Data
             if (string.IsNullOrWhiteSpace(device.Id) || string.IsNullOrWhiteSpace(device.Name))
                 throw new ArgumentException("Invalid device data");
 
+            if (device.Version == null)
+                throw new ArgumentException("Version is required for optimistic concurrency");
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                var transaction = connection.BeginTransaction();
                 try
                 {
-                    var cmd = new SqlCommand("UPDATE Device SET Name = @Name, IsEnabled = @IsEnabled WHERE Id = @Id", connection, transaction);
-                    cmd.Parameters.AddWithValue("@Id", device.Id);
-                    cmd.Parameters.AddWithValue("@Name", device.Name);
-                    cmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
-                    cmd.ExecuteNonQuery();
-
                     if (details is PersonalComputer pc)
                     {
-                        var pcCmd = new SqlCommand("UPDATE PersonalComputer SET OS = @OS WHERE Id = @Id", connection, transaction);
-                        pcCmd.Parameters.AddWithValue("@Id", pc.Id);
-                        pcCmd.Parameters.AddWithValue("@OS", pc.OS);
-                        pcCmd.ExecuteNonQuery();
+                        using var cmd = new SqlCommand("UpdatePersonalComputer", connection) {
+                            CommandType = CommandType.StoredProcedure
+                        };
+                        cmd.Parameters.AddWithValue("@Id", device.Id);
+                        cmd.Parameters.AddWithValue("@Name", device.Name);
+                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
+                        cmd.Parameters.AddWithValue("@OS", pc.OS);
+                        cmd.Parameters.AddWithValue("@Version", device.Version);
+                        cmd.ExecuteNonQuery();
                     }
                     else if (details is EmbeddedDevice emb)
                     {
-                        var embCmd = new SqlCommand("UPDATE EmbeddedDevice SET Ip = @Ip, NetworkName = @NetworkName WHERE Id = @Id", connection, transaction);
-                        embCmd.Parameters.AddWithValue("@Id", emb.Id);
-                        embCmd.Parameters.AddWithValue("@Ip", emb.Ip);
-                        embCmd.Parameters.AddWithValue("@NetworkName", emb.NetworkName);
-                        embCmd.ExecuteNonQuery();
+                        using var cmd = new SqlCommand("UpdateEmbeddedDevice", connection) {
+                            CommandType = CommandType.StoredProcedure
+                        };
+                        cmd.Parameters.AddWithValue("@Id", device.Id);
+                        cmd.Parameters.AddWithValue("@Name", device.Name);
+                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
+                        cmd.Parameters.AddWithValue("@Ip", emb.Ip);
+                        cmd.Parameters.AddWithValue("@NetworkName", emb.NetworkName);
+                        cmd.Parameters.AddWithValue("@Version", device.Version);
+                        cmd.ExecuteNonQuery();
                     }
                     else if (details is Smartwatch sw)
                     {
-                        var swCmd = new SqlCommand("UPDATE Smartwatch SET Power = @Power WHERE Id = @Id", connection, transaction);
-                        swCmd.Parameters.AddWithValue("@Id", sw.Id);
-                        swCmd.Parameters.AddWithValue("@Power", sw.Power);
-                        swCmd.ExecuteNonQuery();
+                        using var cmd = new SqlCommand("UpdateSmartwatch", connection) {
+                            CommandType = CommandType.StoredProcedure
+                        };
+                        cmd.Parameters.AddWithValue("@Id", device.Id);
+                        cmd.Parameters.AddWithValue("@Name", device.Name);
+                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
+                        cmd.Parameters.AddWithValue("@Power", sw.Power);
+                        cmd.Parameters.AddWithValue("@Version", device.Version);
+                        cmd.ExecuteNonQuery();
                     }
-                    transaction.Commit();
                 }
-                catch
+                catch (SqlException ex) when (ex.Number == 50000) 
                 {
-                    transaction.Rollback();
-                    throw;
+                    throw new ConcurrencyException("The record has been modified by another user.", ex);
                 }
             }
         }
@@ -248,6 +260,14 @@ namespace DeviceManager.Data
                     throw;
                 }
             }
+        }
+    }
+
+    public class ConcurrencyException : Exception
+    {
+        public ConcurrencyException(string message, Exception innerException) 
+            : base(message, innerException)
+        {
         }
     }
 } 

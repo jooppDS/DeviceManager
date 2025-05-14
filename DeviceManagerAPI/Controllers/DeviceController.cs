@@ -103,7 +103,9 @@ namespace DeviceManagerAPI.Controllers
                         var pc = JsonSerializer.Deserialize<PersonalComputer>(deviceDto.GetRawText());
                         if (pc == null || string.IsNullOrWhiteSpace(pc.Id) || string.IsNullOrWhiteSpace(pc.OS))
                             return BadRequest("Invalid PC data.");
-                        var pcDevice = new Device { Id = id, Name = pc.OS, IsEnabled = true };
+                        if (pc.Version == null)
+                            return BadRequest("Version is required for optimistic concurrency.");
+                        var pcDevice = new Device { Id = id, Name = pc.OS, IsEnabled = true, Version = pc.Version };
                         _repository.UpdateDevice(pcDevice, pc);
                         return Ok(pc);
                     case "embedded":
@@ -113,7 +115,9 @@ namespace DeviceManagerAPI.Controllers
                             return BadRequest("Invalid EmbeddedDevice data.");
                         if (!System.Net.IPAddress.TryParse(emb.Ip, out _))
                             return BadRequest("Invalid IP address format.");
-                        var embDevice = new Device { Id = id, Name = emb.NetworkName, IsEnabled = true };
+                        if (emb.Version == null)
+                            return BadRequest("Version is required for optimistic concurrency.");
+                        var embDevice = new Device { Id = id, Name = emb.NetworkName, IsEnabled = true, Version = emb.Version };
                         _repository.UpdateDevice(embDevice, emb);
                         return Ok(emb);
                     case "smartwatch":
@@ -122,12 +126,18 @@ namespace DeviceManagerAPI.Controllers
                             return BadRequest("Invalid Smartwatch data.");
                         if (sw.Power < 0)
                             return BadRequest("Power must be non-negative.");
-                        var swDevice = new Device { Id = id, Name = "Smartwatch", IsEnabled = true };
+                        if (sw.Version == null)
+                            return BadRequest("Version is required for optimistic concurrency.");
+                        var swDevice = new Device { Id = id, Name = "Smartwatch", IsEnabled = true, Version = sw.Version };
                         _repository.UpdateDevice(swDevice, sw);
                         return Ok(sw);
                     default:
                         return BadRequest("Unknown deviceType.");
                 }
+            }
+            catch (ConcurrencyException ex)
+            {
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception ex)
             {
