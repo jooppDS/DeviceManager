@@ -4,6 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>DeviceManagerAPI</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,7 +19,7 @@
 
 
     <ItemGroup>
-      <ProjectReference Include="..\DeviceManagerLib\DeviceManagerLib.csproj" />
+      <ProjectReference Include="..\DeviceManager.LIB\DeviceManager.LIB.csproj" />
       <ProjectReference Include="..\DeviceManager.Data\DeviceManager.Data.csproj" />
     </ItemGroup>
 

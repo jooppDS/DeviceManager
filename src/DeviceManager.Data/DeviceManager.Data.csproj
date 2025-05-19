@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\DeviceManagerLib\DeviceManagerLib.csproj" />
+    <ProjectReference Include="..\DeviceManager.LIB\DeviceManager.LIB.csproj" />
   </ItemGroup>
 
   <ItemGroup>

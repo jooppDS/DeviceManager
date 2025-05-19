@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{30D312A4-95B5-4682-81C0-E88EACDA4D69}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManagerLib", "src\DeviceManagerLib\DeviceManagerLib.csproj", "{90299341-61E0-4DB9-8F60-E12C0E4C5D01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.LIB", "src\DeviceManager.LIB\DeviceManager.LIB.csproj", "{90299341-61E0-4DB9-8F60-E12C0E4C5D01}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.Data", "src\DeviceManager.Data\DeviceManager.Data.csproj", "{5DFE824A-F8E3-412C-B9E2-3A93810992ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManagerAPI", "src\DeviceManagerAPI\DeviceManagerAPI.csproj", "{C41D0DE2-45C7-4902-B0C7-4731B6D8C396}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.API", "src\DeviceManager.API\DeviceManager.API.csproj", "{C41D0DE2-45C7-4902-B0C7-4731B6D8C396}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
