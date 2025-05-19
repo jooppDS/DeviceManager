@@ -41,7 +41,7 @@ namespace DeviceManager.Data
             return devices;
         }
 
-        public object GetDeviceById(string id)
+        public Device GetDeviceById(string id)
         {
             using (var connection = new SqlConnection(_connectionString))
             {

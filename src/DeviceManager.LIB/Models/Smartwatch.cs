@@ -2,9 +2,8 @@ using System;
 
 namespace DeviceManagerLib
 {
-    public class Smartwatch
+    public class Smartwatch : Device
     {
-        public string Id { get; set; }
         public long Power { get; set; }
         public byte[] Version { get; set; }
     }

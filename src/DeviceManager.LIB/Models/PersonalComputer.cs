@@ -2,9 +2,8 @@ using System;
 
 namespace DeviceManagerLib
 {
-    public class PersonalComputer
+    public class PersonalComputer : Device
     {
-        public string Id { get; set; }
         public string OS { get; set; }
         public byte[] Version { get; set; }
     }
