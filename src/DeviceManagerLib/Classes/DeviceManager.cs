@@ -1,6 +1,7 @@
 ﻿using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 using task2.Interfaces;
+using System.Text;
 
 namespace task2
 {
@@ -149,10 +150,12 @@ namespace task2
         /// <returns>A string with device information.</returns>
         public override string ToString()
         {
-            string output = "";
-            foreach (Device device in deviceStorage)
-                output += device.ToString();
-            return output;
+            var output = new StringBuilder();
+            foreach (var device in deviceStorage)
+            {
+                output.AppendLine(device.ToString());
+            }
+            return output.ToString();
         }
     }
 }

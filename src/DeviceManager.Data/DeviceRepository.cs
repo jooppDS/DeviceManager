@@ -233,24 +233,28 @@ namespace DeviceManager.Data
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
+                
+                var checkCmd = new SqlCommand("SELECT COUNT(*) FROM Device WHERE Id = @Id", connection);
+                checkCmd.Parameters.AddWithValue("@Id", id);
+                int count = (int)checkCmd.ExecuteScalar();
+                
+                if (count == 0)
+                {
+                    throw new KeyNotFoundException($"Device with ID {id} not found.");
+                }
+
                 var transaction = connection.BeginTransaction();
                 try
                 {
-                    var cmd = new SqlCommand("DELETE FROM PersonalComputer WHERE Id = @Id", connection, transaction);
+                    var cmd = new SqlCommand("DELETE FROM Device WHERE Id = @Id", connection, transaction);
                     cmd.Parameters.AddWithValue("@Id", id);
-                    cmd.ExecuteNonQuery();
+                    int rowsAffected = cmd.ExecuteNonQuery();
 
-                    cmd = new SqlCommand("DELETE FROM EmbeddedDevice WHERE Id = @Id", connection, transaction);
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    cmd.ExecuteNonQuery();
-
-                    cmd = new SqlCommand("DELETE FROM Smartwatch WHERE Id = @Id", connection, transaction);
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    cmd.ExecuteNonQuery();
-
-                    cmd = new SqlCommand("DELETE FROM Device WHERE Id = @Id", connection, transaction);
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    cmd.ExecuteNonQuery();
+                    if (rowsAffected == 0)
+                    {
+                        transaction.Rollback();
+                        throw new KeyNotFoundException($"Device with ID {id} not found.");
+                    }
 
                     transaction.Commit();
                 }

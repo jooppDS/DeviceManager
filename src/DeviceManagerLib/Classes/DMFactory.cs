@@ -3,7 +3,7 @@ namespace task2
     /// <summary>
     /// A factory class for creating <see cref="DeviceManager"/> instances.
     /// </summary>
-    public class DMFactory
+    public class DeviceManagerFactory
     {
         /// <summary>
         /// Creates a new <see cref="DeviceManager"/> using the provided file path.

@@ -8,7 +8,12 @@ namespace task2
     /// </summary>
     public class FileHandler : IFileManager
     {
-        private int _counter = 0;
+        private int _counter;
+
+        public FileHandler()
+        {
+            _counter = 0;
+        }
 
         /// <summary>
         /// Loads a file and parses it into a list of <see cref="Device"/> objects.
@@ -20,7 +25,7 @@ namespace task2
             if (!File.Exists(path))
                 return null;
 
-            List<Device> devices = new();
+            var devices = new List<Device>();
             string[] lines = File.ReadAllLines(path);
             Regex regex = new(@"(\S+,*)");
 
@@ -57,7 +62,7 @@ namespace task2
                                 break;
 
                             case string ed when ed.Contains("ED"):
-                                devices.Add(new EmbededDevice(id, values[1], false, values[2], values[3]));
+                                devices.Add(new EmbeddedDevice(id, values[1], false, values[2], values[3]));
                                 break;
                         }
                     }
@@ -82,12 +87,19 @@ namespace task2
             if (File.Exists(path))
                 File.Delete(path);
 
-            foreach (Device device in deviceStorage)
+            try
             {
-                File.AppendAllText(path, $"{device.GetFileFormat()}\n");
+                using StreamWriter writer = new(path);
+                foreach (var device in deviceStorage)
+                {
+                    writer.WriteLine(device.GetFileFormat());
+                }
+                return true;
             }
-
-            return true;
+            catch
+            {
+                return false;
+            }
         }
     }
 }
